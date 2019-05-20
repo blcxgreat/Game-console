@@ -8,4 +8,4 @@ Player could choose the difficulity for each game.
 And when they (possibly) win the game, the console will record the player's profile by camera and wait for command for another round.
 The console has music output while playing.
 
-Demo video available here: 
+Demo video available here: https://drive.google.com/drive/folders/1VTxKYW-JQkzRMqnPUcxWvNaEJ4xFk6FF?usp=sharing
