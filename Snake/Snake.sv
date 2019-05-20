@@ -1,0 +1,223 @@
+module Snake (CLOCK_50, reset, HEX0, HEX1, HEX2, HEX3, HEX4, HEX5, KEY, LEDR, SW, score_array, green_array, body_array, count, press);   
+   input logic         CLOCK_50; // 50MHz clock.   
+   output logic [6:0]  HEX0, HEX1, HEX2, HEX3, HEX4, HEX5;           
+   output logic [9:0]  LEDR; 
+	output logic [7:0] [7:0] score_array, green_array, body_array;
+   input logic [3:0]  KEY; // True when not pressed, False when pressed   
+   input logic [9:0]  SW;
+	input logic [3:0] press;
+	
+	//wiring the parameters
+	input logic reset;
+	input logic [2:0] count;
+	logic gameover, not_exist, tracking, hit_own_body, hit_score, LEFT, RIGHT, UP, DOWN, L, R, U, D;
+	logic [3:0] digit_1, digit_10;
+	logic [5:0] snake_length;
+	logic [7:0] red_driver, green_driver, row_sink; 
+	logic [7:0] [7:0] head_position;
+	
+	
+	// win light!
+	logic win;
+   assign LEDR[9] = win;
+	
+	// Generate clk off of CLOCK_50, whichClock picks rate.      
+	logic [31:0] clk;  
+   parameter whichClock = 10;  
+   clock_divider cdiv (.clock(CLOCK_50), .divided_clocks(clk)); 
+   
+	
+	//each line is a matrix light
+	//row 0
+	matrix_single r00 (.Clock(clk[whichClock]), .reset, .tracking, .gameover, .L, .R, .U, .D, .NL(head_position [0] [1]), .NR(head_position [0] [7]), .NU(head_position [1] [0]), .ND(head_position [7] [0]), .snake_length, .hit_score, .lightOn(green_array [0] [0]));
+	matrix_single r01 (.Clock(clk[whichClock]), .reset, .tracking, .gameover, .L, .R, .U, .D, .NL(head_position [0] [2]), .NR(head_position [0] [0]), .NU(head_position [1] [1]), .ND(head_position [7] [1]), .snake_length, .hit_score, .lightOn(green_array [0] [1]));
+	matrix_single r02 (.Clock(clk[whichClock]), .reset, .tracking, .gameover, .L, .R, .U, .D, .NL(head_position [0] [3]), .NR(head_position [0] [1]), .NU(head_position [1] [2]), .ND(head_position [7] [2]), .snake_length, .hit_score, .lightOn(green_array [0] [2]));
+	matrix_single r03 (.Clock(clk[whichClock]), .reset, .tracking, .gameover, .L, .R, .U, .D, .NL(head_position [0] [4]), .NR(head_position [0] [2]), .NU(head_position [1] [3]), .ND(head_position [7] [3]), .snake_length, .hit_score, .lightOn(green_array [0] [3]));
+	matrix_single r04 (.Clock(clk[whichClock]), .reset, .tracking, .gameover, .L, .R, .U, .D, .NL(head_position [0] [5]), .NR(head_position [0] [3]), .NU(head_position [1] [4]), .ND(head_position [7] [4]), .snake_length, .hit_score, .lightOn(green_array [0] [4]));
+	matrix_single r05 (.Clock(clk[whichClock]), .reset, .tracking, .gameover, .L, .R, .U, .D, .NL(head_position [0] [6]), .NR(head_position [0] [4]), .NU(head_position [1] [5]), .ND(head_position [7] [5]), .snake_length, .hit_score, .lightOn(green_array [0] [5]));
+	matrix_single r06 (.Clock(clk[whichClock]), .reset, .tracking, .gameover, .L, .R, .U, .D, .NL(head_position [0] [7]), .NR(head_position [0] [5]), .NU(head_position [1] [6]), .ND(head_position [7] [6]), .snake_length, .hit_score, .lightOn(green_array [0] [6]));
+	matrix_single r07 (.Clock(clk[whichClock]), .reset, .tracking, .gameover, .L, .R, .U, .D, .NL(head_position [0] [0]), .NR(head_position [0] [6]), .NU(head_position [1] [7]), .ND(head_position [7] [7]), .snake_length, .hit_score, .lightOn(green_array [0] [7]));
+	
+	//row 1
+	matrix_single r10 (.Clock(clk[whichClock]), .reset, .tracking, .gameover, .L, .R, .U, .D, .NL(head_position [1] [1]), .NR(head_position [1] [7]), .NU(head_position [2] [0]), .ND(head_position [0] [0]), .snake_length, .hit_score, .lightOn(green_array [1] [0]));
+	matrix_single r11 (.Clock(clk[whichClock]), .reset, .tracking, .gameover, .L, .R, .U, .D, .NL(head_position [1] [2]), .NR(head_position [1] [0]), .NU(head_position [2] [1]), .ND(head_position [0] [1]), .snake_length, .hit_score, .lightOn(green_array [1] [1]));
+	matrix_single r12 (.Clock(clk[whichClock]), .reset, .tracking, .gameover, .L, .R, .U, .D, .NL(head_position [1] [3]), .NR(head_position [1] [1]), .NU(head_position [2] [2]), .ND(head_position [0] [2]), .snake_length, .hit_score, .lightOn(green_array [1] [2]));
+	matrix_single r13 (.Clock(clk[whichClock]), .reset, .tracking, .gameover, .L, .R, .U, .D, .NL(head_position [1] [4]), .NR(head_position [1] [2]), .NU(head_position [2] [3]), .ND(head_position [0] [3]), .snake_length, .hit_score, .lightOn(green_array [1] [3]));
+	matrix_single r14 (.Clock(clk[whichClock]), .reset, .tracking, .gameover, .L, .R, .U, .D, .NL(head_position [1] [5]), .NR(head_position [1] [3]), .NU(head_position [2] [4]), .ND(head_position [0] [4]), .snake_length, .hit_score, .lightOn(green_array [1] [4]));
+	matrix_single r15 (.Clock(clk[whichClock]), .reset, .tracking, .gameover, .L, .R, .U, .D, .NL(head_position [1] [6]), .NR(head_position [1] [4]), .NU(head_position [2] [5]), .ND(head_position [0] [5]), .snake_length, .hit_score, .lightOn(green_array [1] [5]));
+	matrix_single r16 (.Clock(clk[whichClock]), .reset, .tracking, .gameover, .L, .R, .U, .D, .NL(head_position [1] [7]), .NR(head_position [1] [5]), .NU(head_position [2] [6]), .ND(head_position [0] [6]), .snake_length, .hit_score, .lightOn(green_array [1] [6]));
+	matrix_single r17 (.Clock(clk[whichClock]), .reset, .tracking, .gameover, .L, .R, .U, .D, .NL(head_position [1] [0]), .NR(head_position [1] [6]), .NU(head_position [2] [7]), .ND(head_position [0] [7]), .snake_length, .hit_score, .lightOn(green_array [1] [7]));
+	
+	//row 2
+	matrix_single r20 (.Clock(clk[whichClock]), .reset, .tracking, .gameover, .L, .R, .U, .D, .NL(head_position [2] [1]), .NR(head_position [2] [7]), .NU(head_position [3] [0]), .ND(head_position [1] [0]), .snake_length, .hit_score, .lightOn(green_array [2] [0]));
+	matrix_single r21 (.Clock(clk[whichClock]), .reset, .tracking, .gameover, .L, .R, .U, .D, .NL(head_position [2] [2]), .NR(head_position [2] [0]), .NU(head_position [3] [1]), .ND(head_position [1] [1]), .snake_length, .hit_score, .lightOn(green_array [2] [1]));
+	matrix_single r22 (.Clock(clk[whichClock]), .reset, .tracking, .gameover, .L, .R, .U, .D, .NL(head_position [2] [3]), .NR(head_position [2] [1]), .NU(head_position [3] [2]), .ND(head_position [1] [2]), .snake_length, .hit_score, .lightOn(green_array [2] [2]));
+	matrix_single r23 (.Clock(clk[whichClock]), .reset, .tracking, .gameover, .L, .R, .U, .D, .NL(head_position [2] [4]), .NR(head_position [2] [2]), .NU(head_position [3] [3]), .ND(head_position [1] [3]), .snake_length, .hit_score, .lightOn(green_array [2] [3]));
+	matrix_single r24 (.Clock(clk[whichClock]), .reset, .tracking, .gameover, .L, .R, .U, .D, .NL(head_position [2] [5]), .NR(head_position [2] [3]), .NU(head_position [3] [4]), .ND(head_position [1] [4]), .snake_length, .hit_score, .lightOn(green_array [2] [4]));
+	matrix_single r25 (.Clock(clk[whichClock]), .reset, .tracking, .gameover, .L, .R, .U, .D, .NL(head_position [2] [6]), .NR(head_position [2] [4]), .NU(head_position [3] [5]), .ND(head_position [1] [5]), .snake_length, .hit_score, .lightOn(green_array [2] [5]));
+	matrix_single r26 (.Clock(clk[whichClock]), .reset, .tracking, .gameover, .L, .R, .U, .D, .NL(head_position [2] [7]), .NR(head_position [2] [5]), .NU(head_position [3] [6]), .ND(head_position [1] [6]), .snake_length, .hit_score, .lightOn(green_array [2] [6]));
+	matrix_single r27 (.Clock(clk[whichClock]), .reset, .tracking, .gameover, .L, .R, .U, .D, .NL(head_position [2] [0]), .NR(head_position [2] [6]), .NU(head_position [3] [7]), .ND(head_position [1] [7]), .snake_length, .hit_score, .lightOn(green_array [2] [7]));
+	
+	//row 3
+	matrix_single r30 (.Clock(clk[whichClock]), .reset, .tracking, .gameover, .L, .R, .U, .D, .NL(head_position [3] [1]), .NR(head_position [3] [7]), .NU(head_position [4] [0]), .ND(head_position [2] [0]), .snake_length, .hit_score, .lightOn(green_array [3] [0]));
+	matrix_single r31 (.Clock(clk[whichClock]), .reset, .tracking, .gameover, .L, .R, .U, .D, .NL(head_position [3] [2]), .NR(head_position [3] [0]), .NU(head_position [4] [1]), .ND(head_position [2] [1]), .snake_length, .hit_score, .lightOn(green_array [3] [1]));
+	matrix_single r32 (.Clock(clk[whichClock]), .reset, .tracking, .gameover, .L, .R, .U, .D, .NL(head_position [3] [3]), .NR(head_position [3] [1]), .NU(head_position [4] [2]), .ND(head_position [2] [2]), .snake_length, .hit_score, .lightOn(green_array [3] [2]));
+	matrix_single r33 (.Clock(clk[whichClock]), .reset, .tracking, .gameover, .L, .R, .U, .D, .NL(head_position [3] [4]), .NR(head_position [3] [2]), .NU(head_position [4] [3]), .ND(head_position [2] [3]), .snake_length, .hit_score, .lightOn(green_array [3] [3]));
+	matrix_single r34 (.Clock(clk[whichClock]), .reset, .tracking, .gameover, .L, .R, .U, .D, .NL(head_position [3] [5]), .NR(head_position [3] [3]), .NU(head_position [4] [4]), .ND(head_position [2] [4]), .snake_length, .hit_score, .lightOn(green_array [3] [4]));
+	matrix_center r35 (.Clock(clk[whichClock]), .reset, .tracking, .gameover, .L, .R, .U, .D, .NL(head_position [3] [6]), .NR(head_position [3] [4]), .NU(head_position [4] [5]), .ND(head_position [2] [5]), .snake_length, .hit_score, .lightOn(green_array [3] [5]));
+	matrix_single r36 (.Clock(clk[whichClock]), .reset, .tracking, .gameover, .L, .R, .U, .D, .NL(head_position [3] [7]), .NR(head_position [3] [5]), .NU(head_position [4] [6]), .ND(head_position [2] [6]), .snake_length, .hit_score, .lightOn(green_array [3] [6]));
+	matrix_single r37 (.Clock(clk[whichClock]), .reset, .tracking, .gameover, .L, .R, .U, .D, .NL(head_position [3] [0]), .NR(head_position [3] [6]), .NU(head_position [4] [7]), .ND(head_position [2] [7]), .snake_length, .hit_score, .lightOn(green_array [3] [7]));
+	
+	//row 4
+	matrix_single r40 (.Clock(clk[whichClock]), .reset, .tracking, .gameover, .L, .R, .U, .D, .NL(head_position [4] [1]), .NR(head_position [4] [7]), .NU(head_position [5] [0]), .ND(head_position [3] [0]), .snake_length, .hit_score, .lightOn(green_array [4] [0]));
+	matrix_single r41 (.Clock(clk[whichClock]), .reset, .tracking, .gameover, .L, .R, .U, .D, .NL(head_position [4] [2]), .NR(head_position [4] [0]), .NU(head_position [5] [1]), .ND(head_position [3] [1]), .snake_length, .hit_score, .lightOn(green_array [4] [1]));
+	matrix_single r42 (.Clock(clk[whichClock]), .reset, .tracking, .gameover, .L, .R, .U, .D, .NL(head_position [4] [3]), .NR(head_position [4] [1]), .NU(head_position [5] [2]), .ND(head_position [3] [2]), .snake_length, .hit_score, .lightOn(green_array [4] [2]));
+	matrix_single r43 (.Clock(clk[whichClock]), .reset, .tracking, .gameover, .L, .R, .U, .D, .NL(head_position [4] [4]), .NR(head_position [4] [2]), .NU(head_position [5] [3]), .ND(head_position [3] [3]), .snake_length, .hit_score, .lightOn(green_array [4] [3]));
+	matrix_single r44 (.Clock(clk[whichClock]), .reset, .tracking, .gameover, .L, .R, .U, .D, .NL(head_position [4] [5]), .NR(head_position [4] [3]), .NU(head_position [5] [4]), .ND(head_position [3] [4]), .snake_length, .hit_score, .lightOn(green_array [4] [4]));
+	matrix_single r45 (.Clock(clk[whichClock]), .reset, .tracking, .gameover, .L, .R, .U, .D, .NL(head_position [4] [6]), .NR(head_position [4] [4]), .NU(head_position [5] [5]), .ND(head_position [3] [5]), .snake_length, .hit_score, .lightOn(green_array [4] [5]));
+	matrix_single r46 (.Clock(clk[whichClock]), .reset, .tracking, .gameover, .L, .R, .U, .D, .NL(head_position [4] [7]), .NR(head_position [4] [5]), .NU(head_position [5] [6]), .ND(head_position [3] [6]), .snake_length, .hit_score, .lightOn(green_array [4] [6]));
+	matrix_single r47 (.Clock(clk[whichClock]), .reset, .tracking, .gameover, .L, .R, .U, .D, .NL(head_position [4] [0]), .NR(head_position [4] [6]), .NU(head_position [5] [7]), .ND(head_position [3] [7]), .snake_length, .hit_score, .lightOn(green_array [4] [7]));
+	
+	//row 5
+	matrix_single r50 (.Clock(clk[whichClock]), .reset, .tracking, .gameover, .L, .R, .U, .D, .NL(head_position [5] [1]), .NR(head_position [5] [7]), .NU(head_position [6] [0]), .ND(head_position [4] [0]), .snake_length, .hit_score, .lightOn(green_array [5] [0]));
+	matrix_single r51 (.Clock(clk[whichClock]), .reset, .tracking, .gameover, .L, .R, .U, .D, .NL(head_position [5] [2]), .NR(head_position [5] [0]), .NU(head_position [6] [1]), .ND(head_position [4] [1]), .snake_length, .hit_score, .lightOn(green_array [5] [1]));
+	matrix_single r52 (.Clock(clk[whichClock]), .reset, .tracking, .gameover, .L, .R, .U, .D, .NL(head_position [5] [3]), .NR(head_position [5] [1]), .NU(head_position [6] [2]), .ND(head_position [4] [2]), .snake_length, .hit_score, .lightOn(green_array [5] [2]));
+	matrix_single r53 (.Clock(clk[whichClock]), .reset, .tracking, .gameover, .L, .R, .U, .D, .NL(head_position [5] [4]), .NR(head_position [5] [2]), .NU(head_position [6] [3]), .ND(head_position [4] [3]), .snake_length, .hit_score, .lightOn(green_array [5] [3]));
+	matrix_single r54 (.Clock(clk[whichClock]), .reset, .tracking, .gameover, .L, .R, .U, .D, .NL(head_position [5] [5]), .NR(head_position [5] [3]), .NU(head_position [6] [4]), .ND(head_position [4] [4]), .snake_length, .hit_score, .lightOn(green_array [5] [4]));
+	matrix_single r55 (.Clock(clk[whichClock]), .reset, .tracking, .gameover, .L, .R, .U, .D, .NL(head_position [5] [6]), .NR(head_position [5] [4]), .NU(head_position [6] [5]), .ND(head_position [4] [5]), .snake_length, .hit_score, .lightOn(green_array [5] [5]));
+	matrix_single r56 (.Clock(clk[whichClock]), .reset, .tracking, .gameover, .L, .R, .U, .D, .NL(head_position [5] [7]), .NR(head_position [5] [5]), .NU(head_position [6] [6]), .ND(head_position [4] [6]), .snake_length, .hit_score, .lightOn(green_array [5] [6]));
+	matrix_single r57 (.Clock(clk[whichClock]), .reset, .tracking, .gameover, .L, .R, .U, .D, .NL(head_position [5] [0]), .NR(head_position [5] [6]), .NU(head_position [6] [7]), .ND(head_position [4] [7]), .snake_length, .hit_score, .lightOn(green_array [5] [7]));
+   
+	//row 6
+	matrix_single r60 (.Clock(clk[whichClock]), .reset, .tracking, .gameover, .L, .R, .U, .D, .NL(head_position [6] [1]), .NR(head_position [6] [7]), .NU(head_position [7] [0]), .ND(head_position [5] [0]), .snake_length, .hit_score, .lightOn(green_array [6] [0]));
+	matrix_single r61 (.Clock(clk[whichClock]), .reset, .tracking, .gameover, .L, .R, .U, .D, .NL(head_position [6] [2]), .NR(head_position [6] [0]), .NU(head_position [7] [1]), .ND(head_position [5] [1]), .snake_length, .hit_score, .lightOn(green_array [6] [1]));
+	matrix_single r62 (.Clock(clk[whichClock]), .reset, .tracking, .gameover, .L, .R, .U, .D, .NL(head_position [6] [3]), .NR(head_position [6] [1]), .NU(head_position [7] [2]), .ND(head_position [5] [2]), .snake_length, .hit_score, .lightOn(green_array [6] [2]));
+	matrix_single r63 (.Clock(clk[whichClock]), .reset, .tracking, .gameover, .L, .R, .U, .D, .NL(head_position [6] [4]), .NR(head_position [6] [2]), .NU(head_position [7] [3]), .ND(head_position [5] [3]), .snake_length, .hit_score, .lightOn(green_array [6] [3]));
+	matrix_single r64 (.Clock(clk[whichClock]), .reset, .tracking, .gameover, .L, .R, .U, .D, .NL(head_position [6] [5]), .NR(head_position [6] [3]), .NU(head_position [7] [4]), .ND(head_position [5] [4]), .snake_length, .hit_score, .lightOn(green_array [6] [4]));
+	matrix_single r65 (.Clock(clk[whichClock]), .reset, .tracking, .gameover, .L, .R, .U, .D, .NL(head_position [6] [6]), .NR(head_position [6] [4]), .NU(head_position [7] [5]), .ND(head_position [5] [5]), .snake_length, .hit_score, .lightOn(green_array [6] [5]));
+	matrix_single r66 (.Clock(clk[whichClock]), .reset, .tracking, .gameover, .L, .R, .U, .D, .NL(head_position [6] [7]), .NR(head_position [6] [5]), .NU(head_position [7] [6]), .ND(head_position [5] [6]), .snake_length, .hit_score, .lightOn(green_array [6] [6]));
+	matrix_single r67 (.Clock(clk[whichClock]), .reset, .tracking, .gameover, .L, .R, .U, .D, .NL(head_position [6] [0]), .NR(head_position [6] [6]), .NU(head_position [7] [7]), .ND(head_position [5] [7]), .snake_length, .hit_score, .lightOn(green_array [6] [7]));
+	
+	//row 7
+	matrix_single r70 (.Clock(clk[whichClock]), .reset, .tracking, .gameover, .L, .R, .U, .D, .NL(head_position [7] [1]), .NR(head_position [7] [7]), .NU(head_position [0] [0]), .ND(head_position [6] [0]), .snake_length, .hit_score, .lightOn(green_array [7] [0]));
+	matrix_single r71 (.Clock(clk[whichClock]), .reset, .tracking, .gameover, .L, .R, .U, .D, .NL(head_position [7] [2]), .NR(head_position [7] [0]), .NU(head_position [0] [1]), .ND(head_position [6] [1]), .snake_length, .hit_score, .lightOn(green_array [7] [1]));
+	matrix_single r72 (.Clock(clk[whichClock]), .reset, .tracking, .gameover, .L, .R, .U, .D, .NL(head_position [7] [3]), .NR(head_position [7] [1]), .NU(head_position [0] [2]), .ND(head_position [6] [2]), .snake_length, .hit_score, .lightOn(green_array [7] [2]));
+	matrix_single r73 (.Clock(clk[whichClock]), .reset, .tracking, .gameover, .L, .R, .U, .D, .NL(head_position [7] [4]), .NR(head_position [7] [2]), .NU(head_position [0] [3]), .ND(head_position [6] [3]), .snake_length, .hit_score, .lightOn(green_array [7] [3]));
+	matrix_single r74 (.Clock(clk[whichClock]), .reset, .tracking, .gameover, .L, .R, .U, .D, .NL(head_position [7] [5]), .NR(head_position [7] [3]), .NU(head_position [0] [4]), .ND(head_position [6] [4]), .snake_length, .hit_score, .lightOn(green_array [7] [4]));
+	matrix_single r75 (.Clock(clk[whichClock]), .reset, .tracking, .gameover, .L, .R, .U, .D, .NL(head_position [7] [6]), .NR(head_position [7] [4]), .NU(head_position [0] [5]), .ND(head_position [6] [5]), .snake_length, .hit_score, .lightOn(green_array [7] [5]));
+	matrix_single r76 (.Clock(clk[whichClock]), .reset, .tracking, .gameover, .L, .R, .U, .D, .NL(head_position [7] [7]), .NR(head_position [7] [5]), .NU(head_position [0] [6]), .ND(head_position [6] [6]), .snake_length, .hit_score, .lightOn(green_array [7] [6]));
+	matrix_single r77 (.Clock(clk[whichClock]), .reset, .tracking, .gameover, .L, .R, .U, .D, .NL(head_position [7] [0]), .NR(head_position [7] [6]), .NU(head_position [0] [7]), .ND(head_position [6] [7]), .snake_length, .hit_score, .lightOn(green_array [7] [7]));
+	
+	// handling with "pressing" problems, so that no metastability happens
+   userInput l (.Clock(clk[whichClock]), .reset, .in(press[3]), .out(LEFT));
+	userInput r (.Clock(clk[whichClock]), .reset, .in(press[2]), .out(RIGHT));
+	userInput u (.Clock(clk[whichClock]), .reset, .in(press[1]), .out(UP));
+	userInput d (.Clock(clk[whichClock]), .reset, .in(press[0]), .out(DOWN));
+	
+	//snake movement
+	movement ma (.Clock(clk[whichClock]), .reset, .count, .LEFT, .RIGHT, .UP, .DOWN, .L, .R, .U, .D, .tracking, .gameover);
+	position mb (.Clock(clk[whichClock]), .reset, .gameover, .L, .R, .U, .D, .hit_own_body, .hit_score, .head_position, .green_array, .score_array);
+	detection mc (.Clock(clk[whichClock]), .reset, .tracking, .L, .R, .U, .D, .snake(hit_own_body), .head_position, .orange_array(body_array));
+	
+	// display score
+	seg7 digit1 (.bcd(digit_1), .leds(HEX0));
+	seg7 digit10 (.bcd(digit_10), .leds(HEX1));	
+	
+   // generate and calculate score
+	generate_score sa (.Clock(clk[whichClock]), .reset, .hit_score, .score_array, .green_array, .snake_length, .winGame(win));
+	display_score sb (.Clock(clk[whichClock]), .reset, .hit_score, .digit_1, .digit_10);
+	
+	//outputs
+	assign not_exist = 0;
+   assign HEX2 = 7'b1111111;   
+   assign HEX3 = 7'b1111111;   
+   assign HEX4 = 7'b1111111;
+	assign HEX5 = 7'b1111111; 
+   assign LEDR[8:0] = 9'b0000000000;		
+endmodule
+
+
+
+
+
+
+
+
+
+//module Snake_testbench();
+//	logic         CLOCK_50; // 50MHz clock.   
+//   logic  [6:0]  HEX0, HEX1, HEX2, HEX3, HEX4, HEX5;           
+//   logic  [9:0]  LEDR; 
+//	reg  [35:0] GPIO_0; 
+//   logic  [3:0]  KEY; // True when not pressed, False when pressed   
+//   logic  [9:0]  SW;
+//	logic clk;
+//	Snake dut (.CLOCK_50(clk), .HEX0, .HEX1, .HEX2, .HEX3, .HEX4, .HEX5, .KEY, .LEDR, .SW, .GPIO_0); 
+//	parameter CLOCK_PERIOD = 100;
+//	integer i;
+//	initial begin
+//		i<=0;
+//	end
+//	initial begin
+//		clk <= 0;
+//		forever #(CLOCK_PERIOD/2) clk <= ~clk;
+//	end
+//	initial begin
+//																@(posedge clk);
+//		SW[8]<=1;											@(posedge clk);
+//		SW<=10'b0000000000; KEY<=4'b1111;			@(posedge clk);
+//																@(posedge clk);
+//																@(posedge clk);
+//																@(posedge clk);
+//																@(posedge clk);
+//		SW[9]<=1; 											@(posedge clk);
+//		SW[9]<=0; SW[0]<=1;								@(posedge clk);
+//																@(posedge clk);
+//																@(posedge clk);
+//																@(posedge clk);
+//																@(posedge clk);
+//																@(posedge clk);
+//		KEY[2]<=0;											@(posedge clk);
+//		KEY[2]<=1;											@(posedge clk);
+//																@(posedge clk);
+//		for (i=0; i<60000; i=i+1) 
+//			@(posedge clk);
+//		
+//		
+//																@(posedge clk);
+//																@(posedge clk);
+//		SW[9]<=1; 											@(posedge clk);
+//		SW[9]<=0; SW[4]<=1;								@(posedge clk);
+//																@(posedge clk);
+//																@(posedge clk);
+//		KEY[2]<=0;											@(posedge clk);
+//		KEY[2]<=1;											@(posedge clk);
+//		for (i=0; i<6104; i=i+1) 
+//			@(posedge clk);
+//																@(posedge clk);
+//																@(posedge clk);
+//		KEY[1]<=0;											@(posedge clk);
+//		KEY[1]<=1;											@(posedge clk);
+//			for (i=0; i<6104; i=i+1) 
+//			@(posedge clk);
+//																@(posedge clk);
+//																@(posedge clk);
+//		KEY[2]<=0;											@(posedge clk);
+//		KEY[2]<=1;											@(posedge clk);
+//			for (i=0; i<6104; i=i+1) 
+//			@(posedge clk);
+//																@(posedge clk);
+//																@(posedge clk);
+//		KEY[0]<=0;											@(posedge clk);
+//		KEY[0]<=1;											@(posedge clk);
+//			for (i=0; i<6104; i=i+1) 
+//			@(posedge clk);
+//																@(posedge clk);
+//																@(posedge clk);
+//		KEY[3]<=0;											@(posedge clk);
+//		KEY[3]<=1;											@(posedge clk);
+//			for (i=0; i<10000; i=i+1) 
+//			@(posedge clk);
+//      $stop; // End the simulation.  
+//   end      
+//endmodule

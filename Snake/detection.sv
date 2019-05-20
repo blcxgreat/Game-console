@@ -1,0 +1,112 @@
+module detection (Clock, reset, tracking, L, R, U, D, snake, head_position, orange_array);
+	input logic Clock, reset, L, R, U, D, tracking, snake;
+	input logic [7:0] [7:0] head_position;
+	output logic [7:0] [7:0] orange_array;
+
+	integer i;
+	always_ff @(posedge Clock) begin          
+		if (~reset) begin
+			if (ps == bump)
+				orange_array <= head_position;
+			else
+				for (i=0; i<=7; i=i+1) 
+					orange_array[i] <= 2'b00;
+		end else begin
+			for (i=0; i<=7; i=i+1) 
+				orange_array[i] <= 2'b00;
+		end
+	end
+	
+	always_ff @(posedge Clock) begin          
+       if (reset)
+			ps <= initial_s;
+		else
+			ps <= ns;      
+   end 
+	
+	enum {initial_s, bump, off} ps, ns;
+	
+	always_comb begin
+		case (ps)
+			initial_s: if (snake) 	
+			              ns = bump;
+						  else 					
+						     ns = initial_s;
+			
+			bump:	if(tracking) 		
+			         ns = off;
+					else 					
+					   ns = bump;
+						
+			off:	if(tracking) 		
+			         ns = bump;
+					else 					
+					   ns = off;
+		endcase
+	end
+	
+endmodule 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//module detection_testbench();
+//	logic Clock, reset; 
+//	logic L, R, U, D;
+//	logic tracking;
+//	logic snake;
+//	logic [7:0] [7:0] head_position;
+//	logic [7:0] [7:0] orange_array;
+//	detection dut (.Clock, .reset, .tracking, .L, .R, .U, .D, .snake, .head_position, .orange_array);
+//	
+//	parameter CLOCK_PERIOD = 100;
+//	initial begin
+//		Clock <= 0;
+//		forever #(CLOCK_PERIOD/2) Clock <= ~Clock;	
+//	end
+//	initial begin
+//		integer i;
+//		for (i=0; i<8; i=i+1)
+//			head_position[i] <= 2'b00;
+//	end
+//	initial begin
+//														@(posedge Clock);
+//					reset<=1;						@(posedge Clock); 
+//					reset<=0; L<=0; R<=0; U<=0; D<=0; head_position[0][0] <=1; @(posedge Clock);
+//														@(posedge Clock);
+//														@(posedge Clock);
+//														@(posedge Clock);
+//					R<=1;								@(posedge Clock);
+//					R<=0;								@(posedge Clock);
+//														@(posedge Clock);
+//														@(posedge Clock);
+//														@(posedge Clock);
+//														@(posedge Clock);
+//														@(posedge Clock);
+//														@(posedge Clock);
+//														@(posedge Clock);
+//														@(posedge Clock);
+//														@(posedge Clock);
+//														@(posedge Clock);
+//														@(posedge Clock);
+//					tracking<=1;					@(posedge Clock);
+//														@(posedge Clock);
+//														@(posedge Clock);
+//														@(posedge Clock);
+//					tracking<=0;					@(posedge Clock);
+//														@(posedge Clock);
+//														@(posedge Clock);
+//		$stop; // End the simulation.  
+//   end      
+//endmodule

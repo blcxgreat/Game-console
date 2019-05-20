@@ -1,0 +1,75 @@
+module userInput (Clock, reset, in, out); 
+   input logic Clock, reset; 
+	input logic in; 
+   output logic out;
+	logic	D1, Q1;
+	enum { NotPushed, BeingPushed} ps, ns;
+	always_comb begin
+		case (ps)
+			NotPushed:		if(in) ns = BeingPushed;
+								else			 ns = NotPushed;
+			BeingPushed:	if(in) ns = BeingPushed;
+								else			 ns = NotPushed;
+		endcase
+	end
+	
+	assign D1 = ((ps == NotPushed) & in);
+	
+	always_ff @(posedge Clock) begin          
+      if (reset)
+			begin
+				ps <= NotPushed;
+				Q1 <= 0;
+				out <= 0;
+			end
+		else
+			begin
+				ps   <=   ns;
+				Q1 <= D1;
+				out <= Q1;
+			end
+   end      
+endmodule 
+
+
+
+
+
+
+module userInput_testbench();
+	logic Clock, reset;
+	logic in, out;
+	userInput dut (.Clock, .in, .out);
+	
+	parameter CLOCK_PERIOD = 100;
+	initial begin
+		Clock <= 0;
+		forever #(CLOCK_PERIOD/2) Clock <= ~Clock;
+	end
+	initial begin
+														@(posedge Clock);
+					reset<=1;						@(posedge Clock); 
+					reset<=0; in <= 0; 	@(posedge Clock);     
+														@(posedge Clock);     
+														@(posedge Clock);     
+					in <= 1;					@(posedge Clock);     
+														@(posedge Clock);     
+														@(posedge Clock);     
+														@(posedge Clock);     
+					in <= 0;					@(posedge Clock);     
+														@(posedge Clock);     
+														@(posedge Clock);     
+														@(posedge Clock);
+					in <=1;					@(posedge Clock);     
+					in <= 0;					@(posedge Clock);     
+					in <= 1;					@(posedge Clock);
+					in <= 0;					@(posedge Clock);     
+					in <= 1;					@(posedge Clock);
+					reset<=1;						@(posedge Clock);
+					in <= 0;					@(posedge Clock);     
+														@(posedge Clock);					
+														
+
+      $stop; // End the simulation.  
+   end      
+endmodule
